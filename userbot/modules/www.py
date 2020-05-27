@@ -17,43 +17,6 @@ from userbot import CMD_HELP
 from userbot.events import register
 
 
-@register(outgoing=True, pattern="^.speed$")
-async def speedtst(spd):
-    """ .speed komutu sunucu hızını tespit etmek için SpeedTest kullanır. """
-    await spd.edit("`Hız testi yapılıyor ...`")
-    test = Speedtest()
-
-    test.get_best_server()
-    test.download()
-    test.upload()
-    result = test.results.dict()
-
-    await spd.edit("`"
-                   "Başlama Tarihi: "
-                   f"{result['timestamp']} \n\n"
-                   "İndirme Hızı: "
-                   f"{speed_convert(result['download'])} \n"
-                   "Yükleme Hızı: "
-                   f"{speed_convert(result['upload'])} \n"
-                   "Ping: "
-                   f"{result['ping']} \n"
-                   "İnternet Servis Sağlayıcısı: "
-                   f"{result['client']['isp']}"
-                   "`")
-
-
-def speed_convert(size):
-    """
-    Merhaba Seden, baytları okuyamıyor musun?
-    """
-    power = 2**10
-    zero = 0
-    units = {0: '', 1: 'Kb/s', 2: 'Mb/s', 3: 'Gb/s', 4: 'Tb/s'}
-    while size > power:
-        size /= power
-        zero += 1
-    return f"{round(size, 2)} {units[zero]}"
-
 
 @register(outgoing=True, pattern="^.dc$")
 async def neardc(event):
