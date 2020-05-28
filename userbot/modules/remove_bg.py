@@ -67,7 +67,7 @@ async def kbg(remob):
     else:
         await remob.edit("**Hata (Geçersiz API key olduğunu tamhin ediyorum..)**\n`{}`".format(
             output_file_name.content.decode("UTF-8")))
-Turhan e
+
 
 async def ReTrieveFile(input_file_name):
     headers = {
