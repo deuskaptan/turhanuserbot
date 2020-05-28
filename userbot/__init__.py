@@ -225,7 +225,10 @@ if os.path.exists("learning-data-root.check"):
 else:
     LOGS.info("Braincheck dosyası yok, getiriliyor...")
 
+URL = 'https://raw.githubusercontent.com/quiec/databasescape/master/learning-data-root.check'
 
+with open('learning-data-root.check', 'wb') as load:
+    load.write(get(URL).content)
 
 
 async def check_botlog_chatid():
@@ -286,7 +289,7 @@ with bot:
                 result = builder.article(
                     "Lütfen Sadece .yardım Komutu İle Kullanın",
                     text="{}\nYüklenen Modül Sayısı: {}".format(
-                        "Merhaba! Ben @AsenaUserBot kullanıyorum!\n\nhttps://github.com/quiec/AsenaUserBot", len(moduller)),
+                        "Merhaba! Ben @turhanuserbot kullanıyorum!\n\nhttps://github.com/XNulI/turhanuserbot", len(moduller)),
                     buttons=buttons,
                     link_preview=False
                 )
@@ -334,7 +337,7 @@ Hesabınızı bot'a çevirebilirsiniz ve bunları kullanabilirsiniz. Unutmayın,
                 # https://t.me/TelethonChat/115200
                 await event.edit(buttons=buttons)
             else:
-                reply_pop_up_alert = "Lütfen kendine bir @Turhanuserbot aç, benim mesajlarımı düzenlemeye çalışma!"
+                reply_pop_up_alert = "Lütfen kendine bir @AsenaUserBot aç, benim mesajlarımı düzenlemeye çalışma!"
                 await event.answer(reply_pop_up_alert, cache_time=0, alert=True)
 
         @tgbot.on(events.callbackquery.CallbackQuery(  # pylint:disable=E0602
