@@ -119,9 +119,7 @@ async def fetch_info(replied_user, event):
     is_bot = replied_user.user.bot
     restricted = replied_user.user.restricted
     verified = replied_user.user.verified
-    photo = await event.client.download_profile_
-    
-    (user_id,
+    photo = await event.client.download_profile_photo(user_id,
                                                       TEMP_DOWNLOAD_DIRECTORY +
                                                       str(user_id) + ".jpg",
                                                       download_big=True)
@@ -133,18 +131,18 @@ async def fetch_info(replied_user, event):
         "Bu kullanıcının kullanıcı adı yok")
     user_bio = "Bu kullanıcının hakkında hiçbir şey yok" if not user_bio else user_bio
 
-    caption = "<b>TURHAN SENİN İÇİN ARAŞTIRDI</b>\n\n"
+    caption = "<b>KULLANICI BILGISI:</b>\n\n"
     caption += f"İsim: {first_name}\n"
     caption += f"Soyisim: {last_name}\n"
     caption += f"Kullanıcı Adı: {username}\n"
     caption += f"Veri merkezi ID: {dc_id}\n"
+    caption += f"Telegram tarafından doğrulandı mı: {verified}\n"
     caption += f"ID: <code>{user_id}</code>\n\n"
     caption += f"Biyografi: \n<code>{user_bio}</code>\n\n"
-    caption += f"Bu kullanıcı ile ortak sohbetler: {common_chat}\n"
     caption += "Profil için kalıcı bağlantı: "
     caption += f"<a href=\"tg://user?id={user_id}\">{first_name}</a>"
 
-    return caption
+    return photo, caption
 
 
 CMD_HELP.update({
