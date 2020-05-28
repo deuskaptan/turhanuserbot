@@ -112,7 +112,7 @@ HEROKU_APIKEY = os.environ.get("HEROKU_APIKEY", None)
 # Güncelleyici için özel (fork) repo linki.
 UPSTREAM_REPO_URL = os.environ.get(
     "UPSTREAM_REPO_URL",
-    "https://github.com/quiec/AsenaUserBot.git")
+    "https://github.com/XNulI/turhanuserbot.git")
 
 # Ayrıntılı konsol günlügü
 CONSOLE_LOGGER_VERBOSE = sb(os.environ.get("CONSOLE_LOGGER_VERBOSE", "False"))
@@ -225,10 +225,7 @@ if os.path.exists("learning-data-root.check"):
 else:
     LOGS.info("Braincheck dosyası yok, getiriliyor...")
 
-URL = 'https://raw.githubusercontent.com/quiec/databasescape/master/learning-data-root.check'
 
-with open('learning-data-root.check', 'wb') as load:
-    load.write(get(URL).content)
 
 
 async def check_botlog_chatid():
@@ -337,7 +334,7 @@ Hesabınızı bot'a çevirebilirsiniz ve bunları kullanabilirsiniz. Unutmayın,
                 # https://t.me/TelethonChat/115200
                 await event.edit(buttons=buttons)
             else:
-                reply_pop_up_alert = "Lütfen kendine bir @AsenaUserBot aç, benim mesajlarımı düzenlemeye çalışma!"
+                reply_pop_up_alert = "Lütfen kendine bir @Turhanuserbot aç, benim mesajlarımı düzenlemeye çalışma!"
                 await event.answer(reply_pop_up_alert, cache_time=0, alert=True)
 
         @tgbot.on(events.callbackquery.CallbackQuery(  # pylint:disable=E0602
