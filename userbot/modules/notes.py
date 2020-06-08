@@ -1,135 +1,115 @@
 # Copyright (C) 2019 The Raphielscape Company LLC.
 #
-# Licensed under the Raphielscape Public License, Version 1.c (the "License");
+# Licensed under the Raphielscape Public License, Version 1.d (the "License");
 # you may not use this file except in compliance with the License.
 #
+""" Userbot module containing commands for keeping notes. """
 
-# Asena UserBot - Yusuf Usta
-
-
-""" Not tutma komutlarını içeren UserBot modülüdür. """
-
-from userbot import BOTLOG, BOTLOG_CHATID, CMD_HELP
-from userbot.events import register
 from asyncio import sleep
 
-@register(outgoing=True, pattern="^.notes$")
-async def notes_active(svd):
-    """ .notes komutu sohbette kaydedilmiş tüm notları listeler. """
-    try:
-        from userbot.modules.sql_helper.notes_sql import get_notes
-    except AttributeError:
-        await svd.edit("`Bot Non-SQL modunda çalışıyor!!`")
+from userbot import (BOTLOG, BOTLOG_CHATID, CMD_HELP, is_mongo_alive,
+                     is_redis_alive)
+from userbot.events import register
+from userbot.modules.dbhelper import add_note, delete_note, get_note, get_notes
+
+
+@register(outgoing=True, pattern="^.saved$")
+async def notes_active(event):
+    """ For .saved command, list all of the notes saved in a chat. """
+    if not is_mongo_alive() or not is_redis_alive():
+        await event.edit("`Database connections failing!`")
         return
-    message = "`Bu sohbette kaydedilmiş not bulunamadı`"
-    notes = get_notes(svd.chat_id)
+
+    message = "`There are no saved notes in this chat`"
+    notes = await get_notes(event.chat_id)
     for note in notes:
-        if message == "`Bu sohbette kaydedilmiş not bulunamadı`":
-            message = "Bu sohbette kayıtlı notlar:\n"
-            message += "`#{}`\n".format(note.keyword)
+        if message == "`There are no saved notes in this chat`":
+            message = "Notes saved in this chat:\n"
+            message += "🔹 **{}**\n".format(note["name"])
         else:
-            message += "`#{}`\n".format(note.keyword)
-    await svd.edit(message)
+            message += "🔹 **{}**\n".format(note["name"])
+
+    await event.edit(message)
 
 
 @register(outgoing=True, pattern=r"^.clear (\w*)")
-async def remove_notes(clr):
-    """ .clear komutu istenilen notu siler. """
-    try:
-        from userbot.modules.sql_helper.notes_sql import rm_note
-    except AttributeError:
-        await clr.edit("`Bot Non-SQL modunda çalışıyor!!`")
+async def remove_notes(event):
+    """ For .clear command, clear note with the given name."""
+    if not is_mongo_alive() or not is_redis_alive():
+        await event.edit("`Database connections failing!`")
         return
-    notename = clr.pattern_match.group(1)
-    if rm_note(clr.chat_id, notename) is False:
-        return await clr.edit(" **{}** `notu bulunamadı`".format(notename))
+    notename = event.pattern_match.group(1)
+    if await delete_note(event.chat_id, notename) is False:
+        return await event.edit("`Couldn't find note:` **{}**".format(notename)
+                                )
     else:
-        return await clr.edit(
-            "**{}** `notu başarıyla silindi`".format(notename))
+        return await event.edit(
+            "`Successfully deleted note:` **{}**".format(notename))
 
 
 @register(outgoing=True, pattern=r"^.save (\w*)")
-async def add_note(fltr):
-    """ .save komutu bir sohbette not kaydeder. """
-    try:
-        from userbot.modules.sql_helper.notes_sql import add_note
-    except AttributeError:
-        await fltr.edit("`Bot Non-SQL modunda çalışıyor!!`")
+async def add_filter(event):
+    """ For .save command, saves notes in a chat. """
+    if not is_mongo_alive() or not is_redis_alive():
+        await event.edit("`Database connections failing!`")
         return
-    keyword = fltr.pattern_match.group(1)
-    string = fltr.text.partition(keyword)[2]
-    msg = await fltr.get_reply_message()
-    msg_id = None
-    if msg and msg.media and not string:
-        if BOTLOG_CHATID:
-            await fltr.client.send_message(
-                BOTLOG_CHATID, f"#NOTE\
-            \nGrup ID: {fltr.chat_id}\
-            \nAnahtar kelime: {keyword}\
-            \n\nBu mesaj sohbette notu cevaplamak için kaydedildi, lütfen bu mesajı silmeyin!"
-            )
-            msg_o = await fltr.client.forward_messages(entity=BOTLOG_CHATID,
-                                                       messages=msg,
-                                                       from_peer=fltr.chat_id,
-                                                       silent=True)
-            msg_id = msg_o.id
-        else:
-            await fltr.edit(
-                "`Bir medyayı not olarak kaydetmek için BOTLOG_CHATID değerinin ayarlanmış olması gereklidir.`"
-            )
-            return
-    elif fltr.reply_to_msg_id and not string:
-        rep_msg = await fltr.get_reply_message()
-        string = rep_msg.text
-    success = "`Not başarıyla {}. ` #{} `komutuyla notu çağırabilirsiniz`"
-    if add_note(str(fltr.chat_id), keyword, string, msg_id) is False:
-        return await fltr.edit(success.format('güncellendi', keyword))
+
+    notename = event.pattern_match.group(1)
+    string = event.text.partition(notename)[2]
+    if event.reply_to_msg_id:
+        string = " " + (await event.get_reply_message()).text
+
+    msg = "`Note {} successfully. Use` #{} `to get it`"
+
+    if await add_note(event.chat_id, notename, string[1:]) is False:
+        return await event.edit(msg.format('updated', notename))
     else:
-        return await fltr.edit(success.format('eklendi', keyword))
+        return await event.edit(msg.format('added', notename))
+
+
+@register(outgoing=True, pattern=r"^.note (\w*)")
+async def save_note(event):
+    """ For .save command, saves notes in a chat. """
+    if not is_mongo_alive() or not is_redis_alive():
+        await event.edit("`Database connections failing!`")
+        return
+    note = event.text[6:]
+    note_db = await get_note(event.chat_id, note)
+    if not await get_note(event.chat_id, note):
+        return await event.edit("`Note` **{}** `doesn't exist!`".format(note))
+    else:
+        return await event.edit(" 🔹 **{}** - `{}`".format(
+            note, note_db["text"]))
 
 
 @register(pattern=r"#\w*",
           disable_edited=True,
-          disable_errors=True,
-          ignore_unsafe=True)
-async def incom_note(getnt):
-    """ Notların mantığı. """
+          ignore_unsafe=True,
+          disable_errors=True)
+async def note(event):
+    """ Notes logic. """
     try:
-        if not (await getnt.get_sender()).bot:
-            try:
-                from userbot.modules.sql_helper.notes_sql import get_note
-            except AttributeError:
+        if not (await event.get_sender()).bot:
+            if not is_mongo_alive() or not is_redis_alive():
                 return
-            notename = getnt.text[1:]
-            note = get_note(getnt.chat_id, notename)
-            message_id_to_reply = getnt.message.reply_to_msg_id
-            if not message_id_to_reply:
-                message_id_to_reply = None
-            if note and note.f_mesg_id:
-                msg_o = await getnt.client.get_messages(entity=BOTLOG_CHATID,
-                                                        ids=int(
-                                                            note.f_mesg_id))
-                await getnt.client.send_message(getnt.chat_id,
-                                                msg_o.mesage,
-                                                reply_to=message_id_to_reply,
-                                                file=msg_o.media)
-            elif note and note.reply:
-                await getnt.client.send_message(getnt.chat_id,
-                                                note.reply,
-                                                reply_to=message_id_to_reply)
-    except AttributeError:
+
+            notename = event.text[1:]
+            note = await get_note(event.chat_id, notename)
+            if note:
+                await event.reply(note["text"])
+    except BaseException:
         pass
 
 
-@register(outgoing=True, pattern="^.rmbotnotes (.*)")
+@register(outgoing=True, pattern="^.rmnotes (.*)")
 async def kick_marie_notes(kick):
-    """ .rmbotnotes komutu Marie'de (ya da onun tabanındaki botlarda) \
-        kayıtlı olan notları silmeye yarar. """
-    bot_type = kick.pattern_match.group(1).lower()
+    """ For .rmfilters command, allows you to kick all \
+        Marie(or her clones) filters from a chat. """
+    bot_type = kick.pattern_match.group(1)
     if bot_type not in ["marie", "rose"]:
-        await kick.edit("`Bu bot henüz desteklenmiyor.`")
+        await kick.edit("`That bot is not yet supported!`")
         return
-    await kick.edit("```Tüm notlar temizleniyor...```")
+    await kick.edit("```Will be kicking away all Notes!```")
     await sleep(3)
     resp = await kick.get_reply_message()
     filters = resp.text.split("-")[1:]
@@ -141,23 +121,14 @@ async def kick_marie_notes(kick):
             await kick.reply("/clear %s" % (i.strip()))
         await sleep(0.3)
     await kick.respond(
-        "```Botlardaki notlar başarıyla temizlendi.```")
+        "```Successfully purged bots notes yaay!```\n Gimme cookies!")
     if BOTLOG:
         await kick.client.send_message(
-            BOTLOG_CHATID, "Şu sohbetteki tüm notları temizledim: " + str(kick.chat_id))
+            BOTLOG_CHATID, "I cleaned all Notes at " + str(kick.chat_id))
 
 
-CMD_HELP.update({
-    "notes":
-    "\
-#<notismi>\
-\nKullanım: Belirtilen notu çağırır.\
-\n\n.save <not adı> <not olarak kaydedilecek şey> ya da bir mesajı .save <not adı> şeklinde yanıtlayarak kullanılır. \
-\nKullanım: Yanıtlanan mesajı ismiyle birlikte bir not olarak kaydeder. (Resimler, belgeler ve çıkartmalarda da çalışır.)\
-\n\n.notes\
-\nKullanım: Bir sohbetteki tüm notları çağırır.\
-\n\n.clear <not adı>\
-\nKullanım: Belirtilen notu siler.\
-\n\n.rmbotnotes <marie/rose>\
-\nKullanım: Grup yönetimi botlarındaki tüm notları temizler. (Şu anlık Rose, Marie ve Marie klonları destekleniyor.)"
+CMD_HELP.update({"notes": ["Notes",
+    " - `#<notename>`: Get the note with name notename.\n"
+    " - `.save <notename> <content>`: Save content in a note with the name notename.\n"
+    " - `.clear <notename>`: Delete the note with name notename.\n"]
 })

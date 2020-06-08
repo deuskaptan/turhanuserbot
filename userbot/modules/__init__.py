@@ -1,13 +1,9 @@
 # Copyright (C) 2019 The Raphielscape Company LLC.
 #
-# Licensed under the Raphielscape Public License, Version 1.c (the "License");
+# Licensed under the Raphielscape Public License, Version 1.d (the "License");
 # you may not use this file except in compliance with the License.
 #
-
-# Asena UserBot - Yusuf Usta
-#
-
-""" Tüm modülleri yükleyen init dosyası """
+""" Init file which loads all of the modules """
 from userbot import LOGS
 
 
@@ -24,5 +20,5 @@ def __list_all_modules():
 
 
 ALL_MODULES = sorted(__list_all_modules())
-LOGS.info("Yüklenecek modüller: %s", str(ALL_MODULES))
+LOGS.info("Modules to load: %s", str(ALL_MODULES))
 __all__ = ALL_MODULES + ["ALL_MODULES"]

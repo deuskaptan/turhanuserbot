@@ -1,21 +1,10 @@
-# Copyright (C) 2020 TeamDerUntergang.
+# Copyright (C) 2019 The Raphielscape Company LLC.
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Licensed under the Raphielscape Public License, Version 1.d (the "License");
+# you may not use this file except in compliance with the License.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#
-
-""" Olayları yönetmek için UserBot modülü.
- UserBot'un ana bileşenlerinden biri. """
+""" Userbot module for managing events.
+ One of the main components of the userbot. """
 
 import sys
 from asyncio import create_subprocess_shell as asyncsubshell
@@ -25,21 +14,20 @@ from time import gmtime, strftime
 from traceback import format_exc
 
 from telethon import events
+from telethon.tl.types import ChannelParticipantsAdmins
 
-from userbot import bot, BOTLOG_CHATID, LOGSPAMMER
+from userbot import bot, BOTLOG, BOTLOG_CHATID, LOGS
 
 
 def register(**args):
-    """ Yeni bir etkinlik kaydedin. """
+    """ Register a new event. """
     pattern = args.get('pattern', None)
     disable_edited = args.get('disable_edited', False)
     ignore_unsafe = args.get('ignore_unsafe', False)
     unsafe_pattern = r'^[^/!#@\$A-Za-z]'
-    groups_only = args.get('groups_only', False)
-    trigger_on_fwd = args.get('trigger_on_fwd', False)
-    trigger_on_inline = args.get('trigger_on_inline', False)
+    group_only = args.get('group_only', False)
     disable_errors = args.get('disable_errors', False)
-
+    insecure = args.get('insecure', False)
     if pattern is not None and not pattern.startswith('(?i)'):
         args['pattern'] = '(?i)' + pattern
 
@@ -49,17 +37,14 @@ def register(**args):
     if "ignore_unsafe" in args:
         del args['ignore_unsafe']
 
-    if "groups_only" in args:
-        del args['groups_only']
+    if "group_only" in args:
+        del args['group_only']
 
     if "disable_errors" in args:
         del args['disable_errors']
 
-    if "trigger_on_fwd" in args:
-        del args['trigger_on_fwd']
-      
-    if "trigger_on_inline" in args:
-        del args['trigger_on_inline']
+    if "insecure" in args:
+        del args['insecure']
 
     if pattern:
         if not ignore_unsafe:
@@ -67,63 +52,66 @@ def register(**args):
 
     def decorator(func):
         async def wrapper(check):
-            if not LOGSPAMMER:
-                send_to = check.chat_id
-            else:
-                send_to = BOTLOG_CHATID
-
-            if not trigger_on_fwd and check.fwd_from:
+            if check.edit_date and check.is_channel and not check.is_group:
+                # Messages sent in channels can be edited by other users.
+                # Ignore edits that take place in channels.
                 return
-
-            if check.via_bot_id and not trigger_on_inline:
+            if group_only and not check.is_group:
+                await check.respond("`Are you sure this is a group?`")
                 return
-             
-            if groups_only and not check.is_group:
-                await check.respond("`Bunun bir grup olduğunu sanmıyorum.`")
+            if check.via_bot_id and not insecure and check.out:
+                # Ignore outgoing messages via inline bots for security reasons
                 return
 
             try:
                 await func(check)
-                
-
+            #
+            # HACK HACK HACK
+            # Raise StopPropagation to Raise StopPropagation
+            # This needed for AFK to working properly
+            # TODO
+            # Rewrite events to not passing all exceptions
+            #
             except events.StopPropagation:
                 raise events.StopPropagation
+            # This is a gay exception and must be passed out. So that it doesnt spam chats
             except KeyboardInterrupt:
                 pass
-            except BaseException:
+            except BaseException as e:
 
-
+                # Check if we have to disable error logging.
                 if not disable_errors:
+                    LOGS.exception(e) # Log the error in console
+
                     date = strftime("%Y-%m-%d %H:%M:%S", gmtime())
 
-                    text = "**USERBOT HATA RAPORU**\n"
-                    link = "[Turhan Destek Grubu](https://t.me/turhanuserbotsupport)"
-                    text += "İsterseniz, bunu rapor edebilirsiniz"
-                    text += f"- sadece bu mesajı buraya iletin {link}.\n"
-                    text += "Hata ve Tarih dışında hiçbir şey kaydedilmez\n"
+                    text = "**Sorry, I encountered a error!**\n"
+                    link = "[https://t.me/tgpaperplane](Userbot Support Chat)"
+                    text += "If you wanna you can report it"
+                    text += f"- just forward this message to {link}.\n"
+                    text += "I won't log anything except the fact of error and date\n"
 
-                    ftext = "========== UYARI =========="
-                    ftext += "\nBu dosya sadece burada yüklendi,"
-                    ftext += "\nsadece hata ve tarih kısmını kaydettik,"
-                    ftext += "\ngizliliğinize saygı duyuyoruz,"
-                    ftext += "\nburada herhangi bir gizli veri varsa"
-                    ftext += "\nbu hata raporu olmayabilir, kimse verilerinize ulaşamaz.\n"
-                    ftext += "================================\n\n"
-                    ftext += "--------USERBOT HATA GUNLUGU--------\n"
-                    ftext += "\nTarih: " + date
-                    ftext += "\nGrup ID: " + str(check.chat_id)
-                    ftext += "\nGönderen kişinin ID: " + str(check.sender_id)
-                    ftext += "\n\nOlay Tetikleyici:\n"
+                    ftext = "\nDisclaimer:\nThis file uploaded ONLY here, "
+                    ftext += "we logged only fact of error and date, "
+                    ftext += "we respect your privacy, "
+                    ftext += "you may not report this error if you've "
+                    ftext += "any confidential data here, no one will see your data "
+                    ftext += "if you choose not to do so.\n\n"
+                    ftext += "--------BEGIN USERBOT TRACEBACK LOG--------"
+                    ftext += "\nDate: " + date
+                    ftext += "\nGroup ID: " + str(check.chat_id)
+                    ftext += "\nSender ID: " + str(check.sender_id)
+                    ftext += "\n\nEvent Trigger:\n"
                     ftext += str(check.text)
-                    ftext += "\n\nGeri izleme bilgisi:\n"
+                    ftext += "\n\nTraceback info:\n"
                     ftext += str(format_exc())
-                    ftext += "\n\nHata metni:\n"
+                    ftext += "\n\nError text:\n"
                     ftext += str(sys.exc_info()[1])
-                    ftext += "\n\n--------USERBOT HATA GUNLUGU BITIS--------"
+                    ftext += "\n\n--------END USERBOT TRACEBACK LOG--------"
 
-                    command = "git log --pretty=format:\"%an: %s\" -10"
+                    command = "git log --pretty=format:\"%an: %s\" -5"
 
-                    ftext += "\n\n\nSon 10 commit:\n"
+                    ftext += "\n\n\nLast 5 commits:\n"
 
                     process = await asyncsubshell(command,
                                                   stdout=asyncsub.PIPE,
@@ -138,20 +126,26 @@ def register(**args):
                     file.write(ftext)
                     file.close()
 
-                    if LOGSPAMMER:
-                        await check.client.respond("`Üzgünüm, UserBot'um çöktü.\
-                        \nHata günlükleri UserBot günlük grubunda saklanır.`")
+                    if BOTLOG:
+                        await check.client.send_file(
+                            BOTLOG_CHATID,
+                            "error.log",
+                            caption=text,
+                        )
+                    else:
+                        await check.client.send_file(
+                            check.chat_id,
+                            "error.log",
+                            caption=text,
+                        )
 
-                    await check.client.send_file(send_to,
-                                                 "error.log",
-                                                 caption=text)
                     remove("error.log")
             else:
                 pass
+
         if not disable_edited:
             bot.add_event_handler(wrapper, events.MessageEdited(**args))
         bot.add_event_handler(wrapper, events.NewMessage(**args))
-
         return wrapper
 
     return decorator

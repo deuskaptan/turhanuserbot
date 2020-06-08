@@ -1,174 +1,127 @@
 # Copyright (C) 2019 The Raphielscape Company LLC.
 #
-# Licensed under the Raphielscape Public License, Version 1.c (the "License");
+# Licensed under the Raphielscape Public License, Version 1.d (the "License");
 # you may not use this file except in compliance with the License.
 #
+''' A module for helping ban group join spammers. '''
 
-# Asena UserBot - Yusuf Usta
+from asyncio import sleep
 
-
-from userbot.events import register
-from userbot import CMD_HELP, bot, LOGS, CLEAN_WELCOME, BOTLOG_CHATID
 from telethon.events import ChatAction
+from telethon.tl.functions.channels import EditBannedRequest
+from telethon.tl.types import ChannelParticipantsAdmins, Message
+
+from userbot import BOTLOG, BOTLOG_CHATID, CMD_HELP, WELCOME_MUTE, bot
+from userbot.modules.admin import KICK_RIGHTS
 
 
 @bot.on(ChatAction)
-async def welcome_to_chat(event):
+async def welcome_mute(welcm):
+    ''' Ban a recently joined user if it matches the spammer checking algorithm.'''
     try:
-        from userbot.modules.sql_helper.welcome_sql import get_current_welcome_settings
-        from userbot.modules.sql_helper.welcome_sql import update_previous_welcome
-    except:
-        return
-    cws = get_current_welcome_settings(event.chat_id)
-    if cws:
-        """user_added=True,
-        user_joined=True,
-        user_left=False,
-        user_kicked=False"""
-        if (event.user_joined
-                or event.user_added) and not (await event.get_user()).bot:
-            if CLEAN_WELCOME:
-                try:
-                    await event.client.delete_messages(event.chat_id,
-                                                       cws.previous_welcome)
-                except Exception as e:
-                    LOGS.warn(str(e))
-            a_user = await event.get_user()
-            chat = await event.get_chat()
-            me = await event.client.get_me()
-
-            title = chat.title if chat.title else "this chat"
-            participants = await event.client.get_participants(chat)
-            count = len(participants)
-            mention = "[{}](tg://user?id={})".format(a_user.first_name,
-                                                     a_user.id)
-            my_mention = "[{}](tg://user?id={})".format(me.first_name, me.id)
-            first = a_user.first_name
-            last = a_user.last_name
-            if last:
-                fullname = f"{first} {last}"
-            else:
-                fullname = first
-            username = f"@{a_user.username}" if a_user.username else mention
-            userid = a_user.id
-            my_first = me.first_name
-            my_last = me.last_name
-            if my_last:
-                my_fullname = f"{my_first} {my_last}"
-            else:
-                my_fullname = my_first
-            my_username = f"@{me.username}" if me.username else my_mention
-            file_media = None
-            current_saved_welcome_message = None
-            if cws and cws.f_mesg_id:
-                msg_o = await event.client.get_messages(entity=BOTLOG_CHATID,
-                                                        ids=int(cws.f_mesg_id))
-                file_media = msg_o.media
-                current_saved_welcome_message = msg_o.message
-            elif cws and cws.reply:
-                current_saved_welcome_message = cws.reply
-            current_message = await event.reply(
-                current_saved_welcome_message.format(mention=mention,
-                                                     title=title,
-                                                     count=count,
-                                                     first=first,
-                                                     last=last,
-                                                     fullname=fullname,
-                                                     username=username,
-                                                     userid=userid,
-                                                     my_first=my_first,
-                                                     my_last=my_last,
-                                                     my_fullname=my_fullname,
-                                                     my_username=my_username,
-                                                     my_mention=my_mention),
-                file=file_media)
-            update_previous_welcome(event.chat_id, current_message.id)
-
-
-@register(outgoing=True, pattern=r"^.setwelcome(?: |$)(.*)")
-async def save_welcome(event):
-    try:
-        from userbot.modules.sql_helper.welcome_sql import add_welcome_setting
-    except:
-        await event.edit("`SQL dışı modda çalışıyor!`")
-        return
-    msg = await event.get_reply_message()
-    string = event.pattern_match.group(1)
-    msg_id = None
-    if msg and msg.media and not string:
-        if BOTLOG_CHATID:
-            await event.client.send_message(
-                BOTLOG_CHATID, f"#KARSILAMA_NOTU\
-            \nGRUP ID: {event.chat_id}\
-            \nAşağıdaki mesaj sohbet için yeni Karşılama notu olarak kaydedildi, lütfen silmeyin !!"
-            )
-            msg_o = await event.client.forward_messages(
-                entity=BOTLOG_CHATID,
-                messages=msg,
-                from_peer=event.chat_id,
-                silent=True)
-            msg_id = msg_o.id
-        else:
-            await event.edit(
-                "`Karşılama notunu kaydetmek için BOTLOG_CHATID ayarlanması gerekir.`"
-            )
+        if not WELCOME_MUTE:
             return
-    elif event.reply_to_msg_id and not string:
-        rep_msg = await event.get_reply_message()
-        string = rep_msg.text
-    success = "`Karşılama mesajı bu sohbet için {} `"
-    if add_welcome_setting(event.chat_id, 0, string, msg_id) is True:
-        await event.edit(success.format('kaydedildi'))
-    else:
-        await event.edit(success.format('güncellendi'))
+        if welcm.user_joined or welcm.user_added:
+            adder = None
+            ignore = None
+            spambot = False
+            users = None
 
+            if welcm.user_added:
+                ignore = False
+                adder = welcm.action_message.from_id
 
-@register(outgoing=True, pattern="^.checkwelcome$")
-async def show_welcome(event):
-    try:
-        from userbot.modules.sql_helper.welcome_sql import get_current_welcome_settings
-    except:
-        await event.edit("`SQL dışı modda çalışıyor!`")
-        return
-    cws = get_current_welcome_settings(event.chat_id)
-    if not cws:
-        await event.edit("`Burada kayıtlı karşılama mesajı yok.`")
-        return
-    elif cws and cws.f_mesg_id:
-        msg_o = await event.client.get_messages(entity=BOTLOG_CHATID,
-                                                ids=int(cws.f_mesg_id))
-        await event.edit(
-            "`Şu anda bu karşılama notu ile yeni kullanıcıları ağırlıyorum.`")
-        await event.reply(msg_o.message, file=msg_o.media)
-    elif cws and cws.reply:
-        await event.edit(
-            "`Şu anda bu karşılama notu ile yeni kullanıcıları ağırlıyorum.`")
-        await event.reply(cws.reply)
+            async for admin in bot.iter_participants(
+                    welcm.chat_id, filter=ChannelParticipantsAdmins):
+                if admin.id == adder:
+                    ignore = True
+                    break
 
+            if ignore:
+                return
+            elif welcm.user_joined:
+                users_list = hasattr(welcm.action_message.action, "users")
+                if users_list:
+                    users = welcm.action_message.action.users
+                else:
+                    users = [welcm.action_message.from_id]
+            await sleep(5)
 
-@register(outgoing=True, pattern="^.rmwelcome$")
-async def del_welcome(event):
-    try:
-        from userbot.modules.sql_helper.welcome_sql import rm_welcome_setting
-    except:
-        await event.edit("`SQL dışı modda çalışıyor!`")
-        return
-    if rm_welcome_setting(event.chat_id) is True:
-        await event.edit("`Karşılama mesajı bu sohbet için silindi.`")
-    else:
-        await event.edit("`Burada karşılama notu var mı ?`")
+            for user_id in users:
+                async for message in bot.iter_messages(welcm.chat_id,
+                                                       from_user=user_id):
+                    correct_type = isinstance(message, Message)
+                    if not message or not correct_type:
+                        break
 
+                    join_time = welcm.action_message.date
+                    message_date = message.date
 
-CMD_HELP.update({
-    "welcome":
-    "\
-.setwelcome <karışlama mesajı> veya .setwelcome ile bir mesaja cevap verin\
-\nKullanım: Mesajı sohbete karşılama notu olarak kaydeder.\
-\n\nKarşılama mesajlarını biçimlendirmek için kullanılabilir değişkenler :\
-\n`{mention}, {title}, {count}, {first}, {last}, {fullname}, {userid}, {username}, {my_first}, {my_fullname}, {my_last}, {my_mention}, {my_username}`\
-\n\n.checkwelcome\
-\nKullanım: Sohbette karşılama notu olup olmadığını kontrol edin.\
-\n\n.rmwelcome\
-\nKullanım: Geçerli sohbet için karşılama notunu siler.\
-"
-})
+                    if message_date < join_time:
+                        continue  # The message was sent before the user joined, thus ignore it
+
+                    # DEBUGGING. LEAVING IT HERE FOR SOME TIME ###
+                    print(f"User Joined: {join_time}")
+                    print(f"Message Sent: {message_date}")
+                    #
+
+                    user = await welcm.client.get_entity(user_id)
+                    if "http://" in message.text:
+                        spambot = True
+                    elif "t.me" in message.text:
+                        spambot = True
+                    elif message.fwd_from:
+                        spambot = True
+                    elif "https://" in message.text:
+                        spambot = True
+                    else:
+                        if user.first_name in ("Bitmex", "Promotion",
+                                               "Information", "Dex",
+                                               "Announcements", "Info"):
+                            if user.last_name == "Bot":
+                                spambot = True
+
+                    if spambot:
+                        print(f"Potential Spam Message: {message.text}")
+                        await message.delete()
+                        break
+
+                    continue  # Check the next messsage
+
+            if spambot:
+
+                chat = await welcm.get_chat()
+                admin = chat.admin_rights
+                creator = chat.creator
+                if not admin and not creator:
+                    await welcm.reply(
+                        "@admins\n"
+                        "`ANTI SPAMBOT DETECTOR!\n"
+                        "THIS USER MATCHES MY ALGORITHMS AS A SPAMBOT!`")
+                else:
+                    try:
+                        await welcm.reply(
+                            "`Potential Spambot Detected! Kicking away! "
+                            "Will log the ID for further purposes!\n"
+                            f"USER:` [{user.first_name}](tg://user?id={user.id})"
+                        )
+
+                        await welcm.client(
+                            EditBannedRequest(welcm.chat_id, user.id,
+                                              KICK_RIGHTS))
+
+                        await sleep(1)
+
+                    except BaseException:
+                        await welcm.reply(
+                            "@admins\n"
+                            "`ANTI SPAMBOT DETECTOR!\n"
+                            "THIS USER MATCHES MY ALGORITHMS AS A SPAMBOT!`")
+
+                if BOTLOG:
+                    await welcm.client.send_message(
+                        BOTLOG_CHATID, "#SPAMBOT-KICK\n"
+                        f"USER: [{user.first_name}](tg://user?id={user.id})\n"
+                        f"CHAT: {welcm.chat.title}(`{welcm.chat_id}`)")
+    except ValueError:
+        pass

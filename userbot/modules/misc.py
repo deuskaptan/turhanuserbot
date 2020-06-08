@@ -1,151 +1,92 @@
 # Copyright (C) 2019 The Raphielscape Company LLC.
 #
-# Licensed under the Raphielscape Public License, Version 1.c (the "License");
+# Licensed under the Raphielscape Public License, Version 1.d (the "License");
 # you may not use this file except in compliance with the License.
 #
+# You can find misc modules, which dont fit in anything xD
+""" Userbot module for other small commands. """
 
-# Turhan UserBot - Yusuf Usta
-
-
-""" Birkaç küçük komutu içeren UserBot modülü. """
-
-from random import randint
-from asyncio import sleep
+import sys
 from os import execl
-import sys
-import io
-import sys
-from userbot import BOTLOG, BOTLOG_CHATID, CMD_HELP, bot
+from random import randint
+from time import sleep
+
+from userbot import BOTLOG, BOTLOG_CHATID, CMD_HELP
 from userbot.events import register
 
-@register(outgoing=True, pattern="^.resend")
-async def resend(event):
-    await event.delete()
-    m = await event.get_reply_message()
-    if not m:
-        event.edit("`Bir dosyaya yanıt ver.`")
-        return
-    await event.respond(m)
 
 @register(outgoing=True, pattern="^.random")
 async def randomise(items):
-    """ .random komutu, eşya listesinden rastgele bir eşya seçer. """
+    """ For .random command, get a random item from the list of items. """
     itemo = (items.text[8:]).split()
+
     if len(itemo) < 2:
-        await items.edit(
-            "`2 veya daha fazla eşya gerekli. Daha fazla bilgi için .seden random komutunu gir.`"
-        )
+        await items.edit("`2 or more items are required! Check "
+                         ".help random for more info.`")
         return
+
     index = randint(1, len(itemo) - 1)
-    await items.edit("**Sorgu: **\n`" + items.text[8:] + "`\n**Çıktı: **\n`" +
+    await items.edit("**Query: **\n`" + items.text[8:] + "`\n**Output: **\n`" +
                      itemo[index] + "`")
 
 
 @register(outgoing=True, pattern="^.sleep( [0-9]+)?$")
 async def sleepybot(time):
-    """ .sleep komutu Seden'in birkaç saniye uyumasına olanak sağlar. """
+    """ For .sleep command, let the userbot snooze for a few second. """
     if " " not in time.pattern_match.group(1):
-        await time.reply("Kullanım Şekli: `.sleep [saniye]`")
+        await time.reply("Syntax: `.sleep [seconds]`")
     else:
         counter = int(time.pattern_match.group(1))
-        await time.edit("`Horlayarak uyuyorum...`")
-        await sleep(2)
+        await time.edit("`I am sulking and snoozing....`")
+        sleep(2)
         if BOTLOG:
             await time.client.send_message(
                 BOTLOG_CHATID,
-                "Botu" + str(counter) + "saniye uykuya bıraktın.",
+                "You put the bot to sleep for " + str(counter) + " seconds",
             )
-        await sleep(counter)
-        await time.edit("`Günaydın!`")
+        sleep(counter)
 
+
+@register(outgoing=True, pattern="^.shutdown$")
+async def killdabot(event):
+    """ For .shutdown command, shut the bot down."""
+    await event.edit("`Goodbye *Windows XP shutdown sound*....`")
+    if BOTLOG:
+        await event.client.send_message(BOTLOG_CHATID, "#SHUTDOWN \n"
+                                        "Bot shut down")
+    await event.client.disconnect()
 
 
 @register(outgoing=True, pattern="^.restart$")
-async def restart(event):
-    await event.edit("`Bot yeniden başlatılıyor...`")
+async def knocksomesense(event):
+    await event.edit("`Hold tight! I just need a second to be back up....`")
     if BOTLOG:
         await event.client.send_message(BOTLOG_CHATID, "#RESTART \n"
-                                        "Bot yeniden başlatıldı.")
-
-    try:
-        await bot.disconnect()
-    except:
-        pass
-
+                                        "Bot Restarted")
+    await event.client.disconnect()
+    # Spin a new instance of bot
     execl(sys.executable, sys.executable, *sys.argv)
+    # Shut the existing one down
+    exit()
 
 
+@register(outgoing=True, pattern="^.support$")
+async def bot_support(wannahelp):
+    """ For .support command, just returns the group link. """
+    await wannahelp.edit("Group: @tgpaperplane")
 
 
-# Copyright (c) Gegham Zakaryan | 2019
-@register(outgoing=True, pattern="^.repeat (.*)")
-async def repeat(rep):
-    cnt, txt = rep.pattern_match.group(1).split(' ', 1)
-    replyCount = int(cnt)
-    toBeRepeated = txt
-
-    replyText = toBeRepeated + "\n"
-
-    for i in range(0, replyCount - 1):
-        replyText += toBeRepeated + "\n"
-
-    await rep.edit(replyText)
+@register(outgoing=True, pattern="^.repo$")
+async def repo_is_here(wannasee):
+    """ For .repo command, just returns the repo URL. """
+    await wannasee.edit("https://github.com/RaphielGang/Telegram-UserBot/")
 
 
-
-@register(outgoing=True, pattern="^.raw$")
-async def raw(event):
-    the_real_message = None
-    reply_to_id = None
-    if event.reply_to_msg_id:
-        previous_message = await event.get_reply_message()
-        the_real_message = previous_message.stringify()
-        reply_to_id = event.reply_to_msg_id
-    else:
-        the_real_message = event.stringify()
-        reply_to_id = event.message.id
-    with io.BytesIO(str.encode(the_real_message)) as out_file:
-        out_file.name = "raw_message_data.txt"
-        await event.edit(
-            "`Çözülmüş mesaj için userbot loglarını kontrol et!`")
-        await event.client.send_file(
-            BOTLOG_CHATID,
-            out_file,
-            force_document=True,
-            allow_cache=False,
-            reply_to=reply_to_id,
-            caption="`Çözülen mesaj`")
-
-
-CMD_HELP.update({
-    'random':
-    '.random <eşya1> <eşya2> ... <eşyaN>\
-\nKullanım: Eşya listesinden rastgele bir eşya seçer'
-})
-
-CMD_HELP.update({
-    'sleep':
-    '.sleep <saniye>\
-\nKullanım: Seden de bir insan, o da yoruluyor. Ara sıra biraz uyumasına izin ver.'
-})
-
-
-
-
-CMD_HELP.update({
-    "repeat":
-    ".repeat <sayı> <metin>\
-\nKullanım: Bir metni belli bir sayıda tekrar eder. Spam komutu ile karıştırma!"
-})
-
-CMD_HELP.update({"restart": ".restart\
-\nKullanım: Botu yeniden başlatır."})
-
-CMD_HELP.update({"resend": ".resend\
-\nKullanım: Bir medyayı yeniden gönderir."})
-
-CMD_HELP.update({
-    "raw":
-    ".raw\
-\nKullanım: Kullanılan mesaj hakkında JSON'a benzer bir şekilde detaylı bilgiler verir."
+CMD_HELP.update({"misc": ["Misc",
+    " - `.random <item1> <item2> ... <itemN>`: Get a random item from the list of items.\n"
+    " - `.sleep <secs>`: Paperpane gets tired too. Let yours snooze for a few seconds.\n"
+    " - `.shutdown`: Sometimes you need to turn Paperplane off. Sometimes you just hope to"
+    "hear Windows XP shutdown sound... but you don't.\n"
+    " - `.support`: If you need more help, use this command.\n"
+    " - `.repo`: Get the link of the source code of Paperplane in GitHub.\n"]
 })

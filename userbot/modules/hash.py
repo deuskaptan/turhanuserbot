@@ -1,24 +1,23 @@
 # Copyright (C) 2019 The Raphielscape Company LLC.
 #
-# Licensed under the Raphielscape Public License, Version 1.c (the "License");
+# Licensed under the Raphielscape Public License, Version 1.d (the "License");
 # you may not use this file except in compliance with the License.
 #
-
-# Asena UserBot - Yusuf Usta
-
-
-""" Hash ve encode/decode çözme komutlarını içeren UserBot modülü. """
+""" Userbot module containing hash and encode/decode commands. """
 
 from subprocess import PIPE
 from subprocess import run as runapp
+
 import pybase64
+
 from userbot import CMD_HELP
 from userbot.events import register
 
 
 @register(outgoing=True, pattern="^.hash (.*)")
 async def gethash(hash_q):
-    """ .hash komutu md5, sha1, sha256, sha512 dizelerini bulur. """
+    """ For .hash command, find the md5,
+        sha1, sha256, sha512 of the string. """
     hashtxt_ = hash_q.pattern_match.group(1)
     hashtxt = open("hashdis.txt", "w+")
     hashtxt.write(hashtxt_)
@@ -42,7 +41,7 @@ async def gethash(hash_q):
             hash_q.chat_id,
             "hashes.txt",
             reply_to=hash_q.id,
-            caption="`Çok büyük, bunun yerine bir metin dosyası gönderiliyor. `")
+            caption="`It's too big, sending a text file instead. `")
         runapp(["rm", "hashes.txt"], stdout=PIPE)
     else:
         await hash_q.reply(ans)
@@ -50,7 +49,7 @@ async def gethash(hash_q):
 
 @register(outgoing=True, pattern="^.base64 (en|de) (.*)")
 async def endecrypt(query):
-    """ .base64 komutu verilen dizenin base64 kodlamasını bulur. """
+    """ For .base64 command, find the base64 encoding of the given string. """
     if query.pattern_match.group(1) == "en":
         lething = str(
             pybase64.b64encode(bytes(query.pattern_match.group(2),
@@ -62,10 +61,7 @@ async def endecrypt(query):
                                validate=True))[2:]
         await query.reply("Decoded: `" + lething[:-1] + "`")
 
-
-CMD_HELP.update({"base64": "Verilen dizenin base64 kodlamasını bulun"})
-
-CMD_HELP.update({
-    "hash":
-    "Bir txt dosyası yazıldığında md5, sha1, sha256, sha512 dizelerini bulun."
+CMD_HELP.update({"hash": ['Hash',
+    " - `.base64 <str>`: Find the base64 encoding of the given string.\n"
+    " - `.hash <str>`: Find the md5, sha1, sha256, sha512 of the string when written into a txt file.\n"]
 })

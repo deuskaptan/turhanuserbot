@@ -1,13 +1,9 @@
 # Copyright (C) 2019 The Raphielscape Company LLC.
 #
-# Licensed under the Raphielscape Public License, Version 1.c (the "License");
+# Licensed under the Raphielscape Public License, Version 1.d (the "License");
 # you may not use this file except in compliance with the License.
 #
-
-# Asena UserBot - Yusuf Usta
-
-
-""" Gereksiz mesajları temizlemek için UserBot modülü (genellikle spam veya ot). """
+""" Userbot module for purging unneeded messages(usually spam or ot). """
 
 from asyncio import sleep
 
@@ -19,7 +15,7 @@ from userbot.events import register
 
 @register(outgoing=True, pattern="^.purge$")
 async def fastpurger(purg):
-    """ .purge komutu hedeflenen yanıttan başlayarak tüm mesajları temizler. """
+    """ For .purge command, purge all messages starting from the reply. """
     chat = await purg.get_input_chat()
     msgs = []
     itermsg = purg.client.iter_messages(chat, min_id=purg.reply_to_msg_id)
@@ -34,26 +30,29 @@ async def fastpurger(purg):
                 await purg.client.delete_messages(chat, msgs)
                 msgs = []
     else:
-        await purg.edit("`Temizlemeye başlamak için bir mesaja ihtiyacım var.`")
+        await purg.edit("`No message specified.`", )
         return
 
     if msgs:
         await purg.client.delete_messages(chat, msgs)
     done = await purg.client.send_message(
-        purg.chat_id, f"`Hızlı temizlik tamamlandı!`\
-        \n{str(count)} tane mesaj silindi.")
+        purg.chat_id,
+        "`Fast purge complete!\n`Purged " + str(count) +
+        " messages. **This auto-generated message " +
+        "  shall be self destructed in 2 seconds.**",
+    )
 
     if BOTLOG:
         await purg.client.send_message(
             BOTLOG_CHATID,
-            "Hedeflenen " + str(count) + " mesaj başarıyla silindi.")
+            "Purge of " + str(count) + " messages done successfully.")
     await sleep(2)
     await done.delete()
 
 
 @register(outgoing=True, pattern="^.purgeme")
 async def purgeme(delme):
-    """ .purgeme komutu belirtilen miktarda kullanıcın mesajlarını siler. """
+    """ For .purgeme, delete x count of your latest message."""
     message = delme.text
     count = int(message[9:])
     i = 1
@@ -67,12 +66,14 @@ async def purgeme(delme):
 
     smsg = await delme.client.send_message(
         delme.chat_id,
-        "`Temizlik tamamlandı` " + str(count) + " tane mesaj silindi.",
+        "`Purge complete!` Purged " + str(count) +
+        " messages. **This auto-generated message " +
+        " shall be self destructed in 2 seconds.**",
     )
     if BOTLOG:
         await delme.client.send_message(
             BOTLOG_CHATID,
-            "Hedeflenen " + str(count) + " mesaj başarıyla silindi.")
+            "Purge of " + str(count) + " messages done successfully.")
     await sleep(2)
     i = 1
     await smsg.delete()
@@ -80,7 +81,7 @@ async def purgeme(delme):
 
 @register(outgoing=True, pattern="^.del$")
 async def delete_it(delme):
-    """ .del komutu yanıtlanan mesajı siler. """
+    """ For .del command, delete the replied message. """
     msg_src = await delme.get_reply_message()
     if delme.reply_to_msg_id:
         try:
@@ -88,20 +89,20 @@ async def delete_it(delme):
             await delme.delete()
             if BOTLOG:
                 await delme.client.send_message(
-                    BOTLOG_CHATID, "Hedeflenen mesajın silinmesi başarılıyla tamamlandı")
+                    BOTLOG_CHATID, "Deletion of message was successful")
         except rpcbaseerrors.BadRequestError:
             if BOTLOG:
                 await delme.client.send_message(
-                    BOTLOG_CHATID, "Bu mesajı silemiyorum.")
+                    BOTLOG_CHATID, "Well, I can't delete a message")
 
 
-@register(outgoing=True, pattern="^.edit")
+@register(outgoing=True, pattern="^.editme")
 async def editer(edit):
-    """ .editme komutu son mesajınızı düzenler. """
+    """ For .editme command, edit your last message. """
     message = edit.text
     chat = await edit.get_input_chat()
     self_id = await edit.client.get_peer_id('me')
-    string = str(message[6:])
+    string = str(message[8:])
     i = 1
     async for message in edit.client.iter_messages(chat, self_id):
         if i == 2:
@@ -111,12 +112,12 @@ async def editer(edit):
         i = i + 1
     if BOTLOG:
         await edit.client.send_message(BOTLOG_CHATID,
-                                       "Mesaj düzenleme sorgusu başarıyla yürütüldü")
+                                       "Edit query was executed successfully")
 
 
 @register(outgoing=True, pattern="^.sd")
 async def selfdestruct(destroy):
-    """ .sd komutu kendi kendine yok edilebilir mesajlar yapar. """
+    """ For .sd command, make seflf-destructable messages. """
     message = destroy.text
     counter = int(message[4:6])
     text = str(destroy.text[6:])
@@ -126,33 +127,14 @@ async def selfdestruct(destroy):
     await smsg.delete()
     if BOTLOG:
         await destroy.client.send_message(BOTLOG_CHATID,
-                                          "sd sorgusu başarıyla tamamlandı")
+                                          "sd query done successfully")
 
 
-CMD_HELP.update({
-    'purge':
-    '.purge\
-        \nKullanım: Hedeflenen yanıttan başlayarak tüm mesajları temizler.'
-})
-
-CMD_HELP.update({
-    'purgeme':
-    '.purgeme <x>\
-        \nKullanım: Hedeflenen yanıttan başlayarak tüm mesajları temizler.'
-})
-
-CMD_HELP.update({"del": ".del\
-\nKullanım: Yanıtladığınız mesajı siler."})
-
-CMD_HELP.update({
-    'edit':
-    ".edit <yenimesaj>\
-\nKullanım: Son mesajanızı <yenimesaj> ile değiştirin."
-})
-
-CMD_HELP.update({
-    'sd':
-    '.sd <x> <mesaj>\
-\nKullanım: x saniye içinde kendini yok eden bir mesaj oluşturur.\
-\nBotunuzu uyku moduna geçirdiğinden, saniyeleri 100 ün altında tutun.'
+CMD_HELP.update({"purge": ["Purge",
+    " - `.purge`: Purge all messages starting from the reply.\n"
+    " - `.purgeme <x>`: Delete x amount of *your* latest messages.\n"
+    " - `.del`: Delete the message you replied to.\n"
+    " - `.editme <newmsg>`: Edit your message you replied to, changing it to newmsg.\n"
+    " - `.sd <x> <msg>`: Create a message that self-destructs in x seconds. "
+    "Keep the seconds under 100 since it puts your bot to sleep."]
 })
