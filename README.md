@@ -1,45 +1,65 @@
-<div align="center">
-  <img src="https://i.imgyukle.com/2020/05/22/yrdk3x.jpg" width="200" height="200">
-  <h1>Turhan UserBot</h1>
-</div>
-<p align="center">
-    Turhan UserBot, Telegram kullanmanızı kolaylaştıran bir bottur. Tamamen açık kaynaklı ve ücretsizdir.
-    <br>
-        <a href="https://t.me/turhanuserbot">Telegram Kanal</a>
-    <br>
-</p>
+# Paperplane userbot project
 
-----
-
-## Kurulum
-### Basit Yöntem
-Eğer botu kurma hakkında fikriniz yoksa burayı okuyunuz: [Kurulum Rehberi](https://github.com/XNulI/turhanuserbot/wiki/Kurulum/)
-
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/XNulI/turhanuserbot)
-### Zor Yöntem
-```python
-git clone https://github.com/XNulI/turhanuserbot.git
-cd turhanuserbot
-pip install -r requirements.txt
-# Config.env oluşturun ve düzenleyin. #
-python3 main.py
-```
- 
-Herhangi bir istek & şikâyet & öneri varsa [destek grubuna](https://t.me/turhanuserbotsupport) ulaşabilirsiniz.
+![logo](https://telegra.ph/file/73cf4c62b2c64f981961e.png)
 
 ```
-    Userbottan dolayı; Telegram hesabınız yasaklanabilir.
-    Bu bir açık kaynaklı projedir, yaptığınız her işlemden kendiniz sorumlusunuz. Kesinlikle Turhan yöneticileri sorumluluk kabul etmemektedir.
-    Turhanı kurarak bu sorumlulukları kabul etmiş sayılırsınız.
+#include <std/disclaimer.h>
+/**
+    Your Telegram account may get banned.
+    I am not responsible for any improper use of this bot
+    This bot is intended for the purpose of having fun with memes,
+    as well as efficiently managing groups.
+    You ended up spamming groups, getting reported left and right,
+    and you ended up in a Finale Battle with Telegram and at the end
+    Telegram Team deleted your account?
+    And after that, then you pointed your fingers at us
+    for getting your acoount deleted?
+    I will be rolling on the floor laughing at you.
+/**
 ```
 
-## Credit
-Thanks for;
+## What is it?
 
-[RaphielGang for creating Telegram-Userbot](https://github.com/RaphielGang)
+Paperplane is a modular Telegram userbot running on Python3, which can be coupled up with Mongo DB and a Redis backend.
 
-[Tdug Team for Translations](https://github.com/TeamDerUntergang)
+Originally created by baalajimaestro, Paperplane is currently maintained by zakaryan2004. It started as a simple bot,
+which helped with group management, with lots of features from [SkittBot](https://github.com/skittles9823/SkittBot).
+It has since evolved, becoming extremely modular and simple to use.
 
-[Spechide for Inline Bot Plugin](https://github.com/Spechide)
+## How do I use it?
 
-Developing with [Asena](https://github.com/Quiec/AsenaUserBot)
+For configuring Paperplane, you can checkout our [Wiki](https://wiki.raphielgang.org). Please, before asking us in our groups,
+make sure you have followed the Wiki and all the steps required.
+
+Deploy Paperplane to Heroku:
+<p align="left"><a href="https://heroku.com/deploy"> <img src="https://www.herokucdn.com/deploy/button.svg" alt="Deploy to Heroku" /></a></p>
+
+## Groups and support
+
+If you'd just like to know about new features, or announcements, you can join our [news channel](https://t.me/paperplanechannel).
+
+For discussion, bug reporting, and help, you can join [our discussion group](https://t.me/tgpaperplane).
+
+If you find a bug, don't be afraid to report it in our Telegram group or open an issue on this repository. As for unofficial
+forks of Paperplane, we will only assist with issues affecting our central repository, found on [this repo](https://github.com/RaphielGang/Telegram-Userbot).
+
+## Credits
+
+* [@baalajimaestro](https://github.com/baalajimaestro)
+* [@zakaryan2004](https://github.com/zakaryan2004)
+* [@raphielscape](https://github.com/raphielscape)
+* [@yshalsager](https://github.com/yshalsager)
+* [@kandnub](https://github.com/kandnub)
+* [@pqhaz](https://github.com/pqhaz)
+* [@rupansh](https://github.com/rupansh)
+* [@Skittles9823](https://github.com/Skittles9823)
+* [@YouTwitFace](https://github.com/YouTwitFace)
+* [@TheDevXen](https://github.com/TheDevXen)
+* [@nysascape](https://github.com/nysascape)
+* [@RealAkito](https://github.com/RealAkito)
+* [@deletescape](https://github.com/deletescape)
+* [@gotenksIN](https://github.com/gotenksIN)
+* [@Ovenoboyo](https://github.com/Ovenoboyo)
+* [SphericalKat](https://github.com/ATechnoHazard)
+
+and many more people who aren't mentioned here, but may be found in [Contributors](https://github.com/RaphielGang/Telegram-Paperplane/graphs/contributors) page.
